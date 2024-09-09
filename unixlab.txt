@@ -1,0 +1,7 @@
+cho "# unix-lab-" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/A-BHARATH77/unix-lab-.git
+git push -u origin main
