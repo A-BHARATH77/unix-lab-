@@ -1,246 +1,138 @@
-#!/bin/bash
+ls command 
+#include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>  // For opendir(), readdir(), closedir()
+#include <errno.h>   // For errno, perror()
 
-#q1
-printRollNumbers () {
-    for course in "21PW" "21PT" "21PD" "21PC"
-    do
-        for i in $(seq -w 1 40)
-        do
-            echo "$course$i"
-        done
-        echo ""
-    done
+int main(int argc, char *argv[]) {
+    DIR *dir;                     // Pointer to the directory
+    struct dirent *entry;          // Struct to hold directory entry
+    char *directory;
+
+    // If no directory is provided, use the current directory
+    if (argc == 1) {
+        directory = ".";
+    } else if (argc == 2) {
+        directory = argv[1];       // Use the directory provided as an argument
+    } else {
+        fprintf(stderr, "Usage: %s [directory]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Open the directory
+    dir = opendir(directory);
+    if (dir == NULL) {
+        perror("Error opening directory");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read and print entries from the directory
+    while ((entry = readdir(dir)) != NULL) {
+        printf("%s\n", entry->d_name);  // Print the name of the entry
+    }
+
+    // Close the directory
+    closedir(dir);
+
+    return 0;
 }
 
-listSevenLetterFiles () {
-    ls | grep "b[[:lower:]][[:lower:]][[:lower:]]da[[:lower:]]"
+//gcc -o my_ls my_ls.c - compile
+//./my_ls -run
+
+
+cat command 
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>    // For open()
+#include <unistd.h>   // For read(), write(), close()
+
+#define BUFFER_SIZE 1024
+
+void display_file_content(const char *filename) {
+    int fd;                     // File descriptor
+    char buffer[BUFFER_SIZE];    // Buffer to hold file content
+    ssize_t bytes_read;          // Number of bytes read
+
+    // 1. Open the file for reading (O_RDONLY)
+    fd = open(filename, O_RDONLY);
+    if (fd < 0) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    // 2. Read from the file and write to standard output (STDOUT_FILENO)
+    while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
+        // Write the content to standard output
+        if (write(STDOUT_FILENO, buffer, bytes_read) != bytes_read) {
+            perror("Error writing to stdout");
+            close(fd);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // If read returns -1, there was an error
+    if (bytes_read < 0) {
+        perror("Error reading file");
+        close(fd);
+        exit(EXIT_FAILURE);
+    }
+
+    // 3. Close the file descriptor
+    close(fd);
 }
 
-currentDateFolder () {
-    mkdir $(date "+%d-%b-%y")
-}
+int main(int argc, char *argv[]) {
+    // Check if the correct number of arguments is provided
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
-userNameLength () {
-    usernames=$(cat /etc/passwd | cut -d":" -f1 )
-    for i in $usernames
-    do
-        echo $i ${#i}
-    done
-}
+    // Call the function to display the file's content
+    display_file_content(argv[1]);
 
-removePermissions() {
-    if [ $# -ne 1 ]
-    then
-        echo "No args"
-        return 1
-    fi
-
-    dir="$1"
-
-    if [ ! -d "$dir" ]
-    then
-        echo "No such directory"
-        return 1
-    fi
-
-    ls -l "$dir"
-
-    for i in $(ls "$dir")
-    do
-        chmod go-rwx "$dir/$i"
-    done
-
-    echo "Removed :"
-    ls -l "$dir"
-    return 0
-
-}
-# removePermissions "$PWD/dummy"
-
-sortEmployeeAndAlias () {
-    if [ $# -ne 1 ]
-    then
-        echo "No args"
-        return 1
-    fi
-
-    if [ ! -f "$dir" ]
-    then
-        echo "No such file"
-        return 1
-    fi
-
-    employeeFile="$1"
-
-
-    alias sortme="sort -k3,3 -k1,1 "$employeeFile""
-}
-
-grepTest () {
-
-    if [ $# -ne 1 ]
-    then
-        echo "No args"
-        return 1
-    fi
-
-    if [ ! -f "$dir" ]
-    then
-        echo "No such file"
-        return 1
-    fi
-
-    file="$1"
-
-    grep "^[[:upper:]][[:upper:]][[:space:]][[:upper:]]" "$file"
-}
-
-headAndTail(){
-
-    if [ $# -ne 1 ]
-    then
-        echo "No args"
-        return 1
-    fi
-
-    if [ ! -f "$dir" ]
-    then
-        echo "No such file"
-        return 1
-    fi
-
-    cat "$1" | head -8 | tail +5
-}
-
-# Menu-driven interface
-while true; do
-    echo "Choose an option:"
-    echo "1. Print Roll Numbers"
-    echo "2. List Files with Seven Letters"
-    echo "3. Create Current Date Folder"
-    echo "4. Calculate User Name Length"
-    echo "5. Remove Permissions from Directory"
-    echo "6. Sort Employee and Alias"
-    echo "7. Grep Test in File"
-    echo "8. Display Head and Tail of File"
-    echo "9. Exit"
-    read -p "Enter your choice [1-9]: " choice
-
-    case $choice in
-        1)
-            printRollNumbers
-            ;;
-        2)
-            listSevenLetterFiles
-            ;;
-        3)
-            currentDateFolder
-            ;;
-        4)
-            userNameLength
-            ;;
-        5)
-            read -p "Enter directory path: " dir
-            removePermissions "$dir"
-            ;;
-        6)
-            read -p "Enter file path: " file
-            sortEmployeeAndAlias "$file"
-            ;;
-        7)
-            read -p "Enter file path: " file
-            grepTest "$file"
-            ;;
-        8)
-            read -p "Enter file path: " file
-            headAndTail "$file"
-            ;;
-        9)
-            echo "Exiting..."
-            exit 0
-            ;;
-        *)
-            echo "Invalid choice. Please choose between 1-9."
-            ;;
-    esac
-done
--------------------------------------------
-#q2
-#!/bin/bash
-
-regular_files=$(find . -maxdepth 1 -type f | wc -l)
-directories=$(find . -maxdepth 1 -type d | wc -l)
-soft links=$(find . -maxdepth 1 -type l | wc -l)
-
-# Print the report
-echo "Type of files    Count"
-echo "----------------------"
-echo "Regular files    $regular_files"
-echo "Directories      $directories"
-echo "Softlinks        $softlinks"
---------------------------------------------
-#q3
-#!/bin/bash
-
-errcho (){
-    >&2 echo $@;
+    return 0;
 }
 
 
-if [ $# -eq 0 ]
-then
-    errcho "Invalid usage."
-    exit 1
-elif [ $# -eq 1 ]
-then
-    exit 1
-else
-    size=$1
-    shift
-    for i in $@
-    do
-        if [ -e $i -a -f $i ]
-        then
-            fsize=$(wc -c $i | cut -d" " -f1)
-            if [ $fsize -gt $size ]
-            then
-                echo "Contents of $i:"
-                cat $i
-            fi
-        fi
-    done
-fi
+cp command 
+#include <stdio.h>
+#include <stdlib.h>
 
-INPUT OF ARRAYS 
-#!/bin/bash
+int main(int argc, char *argv[]) {
+    // Ensure two arguments are provided: source file and destination file
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s <sourcefile> <destinationfile>\n", argv[0]);
+        exit(1);
+    }
 
-# Prompt the user for input
-echo "Enter values separated by space:"
+    // Open the source file for reading
+    FILE *source_file = fopen(argv[1], "r");
+    if (source_file == NULL) {
+        perror("Error opening source file");
+        exit(1);
+    }
 
-# Read input into an array
-read -a arr
+    // Open the destination file for writing (create it if it doesn't exist)
+    FILE *destination_file = fopen(argv[2], "w");
+    if (destination_file == NULL) {
+        perror("Error opening destination file");
+        fclose(source_file);  // Close the source file before exiting
+        exit(1);
+    }
 
-# Display the array
-echo "You entered: ${arr[@]}"
+    // Copy the contents from source file to destination file
+    char ch;
+    while ((ch = fgetc(source_file)) != EOF) {
+        fputc(ch, destination_file);  // Write each character to the destination file
+    }
 
-# Display individual elements (optional)
-echo "First element: ${arr[0]}"
-echo "Second element: ${arr[1]}"
+    // Close both files
+    fclose(source_file);
+    fclose(destination_file);
 
-FOR LOOP 
-for i in {1..5}
-do
-    echo "Number: $i"
-done
+    printf("File copied successfully from %s to %s.\n", argv[1], argv[2]);
 
-for file in /path/to/directory/*
-do
-    echo "File: $file"
-done
-
-GREP 
-$ grep pattern file_name1 file_name2 file_name3 // -w -c -v -n -o 
-$ grep -r pattern * // search in directires 
-$ grep -l pattern * // list of matching files only
-$ grep -mNUM pattern file_name // Stop reading a file after NUM matching lines with grep command
-grep -f pattern_file file_name // Take pattern from file using grep command
+    return 0;
+}
