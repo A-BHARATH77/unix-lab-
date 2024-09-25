@@ -132,7 +132,194 @@ int main(int argc, char *argv[]) {
     fclose(source_file);
     fclose(destination_file);
 
+Case 1: Two Pipes with Three Processes
+Example Code
+c
+Copy code
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    int pipe1[2], pipe2[2];
+    pid_t p1, p2, p3;
+
+    // Create the first pipe
+    if (pipe(pipe1) == -1) {
+        perror("pipe1");
+        exit(EXIT_FAILURE);
+    }
+
+    // Create the second pipe
+    if (pipe(pipe2) == -1) {
+        perror("pipe2");
+        exit(EXIT_FAILURE);
+    }
+
+    // First process (p1)
+    p1 = fork();
+    if (p1 < 0) {
+        perror("fork p1");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p1 == 0) {
+        // Child process p1
+        close(pipe1[0]); // Close read end of pipe1
+        for (int i = 1; i <= 5; i++) {
+            write(pipe1[1], &i, sizeof(i)); // Write integers 1 to 5
+        }
+        close(pipe1[1]); // Close write end
+        exit(EXIT_SUCCESS);
+    }
+
+    // Second process (p2)
+    p2 = fork();
+    if (p2 < 0) {
+        perror("fork p2");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p2 == 0) {
+        // Child process p2
+        close(pipe1[1]); // Close write end of pipe1
+        close(pipe2[0]); // Close read end of pipe2
+
+        int num;
+        while (read(pipe1[0], &num, sizeof(num)) > 0) {
+            num *= 2; // Process the number (double it)
+            write(pipe2[1], &num, sizeof(num)); // Send to process p3
+        }
+        close(pipe1[0]); // Close read end of pipe1
+        close(pipe2[1]); // Close write end
+        exit(EXIT_SUCCESS);
+    }
+
+    // Third process (p3)
+    p3 = fork();
+    if (p3 < 0) {
+        perror("fork p3");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p3 == 0) {
+        // Child process p3
+        close(pipe1[0]); // Close read end of pipe1
+        close(pipe1[1]); // Close write end of pipe1
+        close(pipe2[1]); // Close write end of pipe2
+
+        int num;
+        while (read(pipe2[0], &num, sizeof(num)) > 0) {
+            printf("Processed number: %d\n", num); // Print the processed number
+        }
+        close(pipe2[0]); // Close read end
+        exit(EXIT_SUCCESS);
+    }
+
+    // Parent process
+    close(pipe1[0]); // Close read end of pipe1
+    close(pipe1[1]); // Close write end of pipe1
+    close(pipe2[0]); // Close read end of pipe2
+    close(pipe2[1]); // Close write end of pipe2
+
+    // Wait for all children to finish
+    wait(NULL);
+    wait(NULL);
+    wait(NULL);
+
+    return 0;
+}
+
+
     printf("File copied successfully from %s to %s.\n", argv[1], argv[2]);
 
     return 0;
 }
+
+case:2
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+int main() {
+    int pipe1[2], pipe2[2];
+    pid_t p1;
+
+    // Create the first pipe
+    if (pipe(pipe1) == -1) {
+        perror("pipe1");
+        exit(EXIT_FAILURE);
+    }
+
+    // Create the second pipe
+    if (pipe(pipe2) == -1) {
+        perror("pipe2");
+        exit(EXIT_FAILURE);
+    }
+
+    // Process (p1)
+    p1 = fork();
+    if (p1 < 0) {
+        perror("fork p1");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p1 == 0) {
+        // Child process (p1)
+        close(pipe1[0]); // Close read end of pipe1
+        close(pipe2[0]); // Close read end of pipe2
+        close(pipe2[1]); // Close write end of pipe2
+
+        // Send integers 1 to 5 to pipe1
+        for (int i = 1; i <= 5; i++) {
+            write(pipe1[1], &i, sizeof(i)); // Write integers 1 to 5
+        }
+        close(pipe1[1]); // Close write end of pipe1
+        exit(EXIT_SUCCESS);
+    }
+
+    // Process (p2)
+    pid_t p2 = fork();
+    if (p2 < 0) {
+        perror("fork p2");
+        exit(EXIT_FAILURE);
+    }
+
+    if (p2 == 0) {
+        // Child process (p2)
+        close(pipe1[1]); // Close write end of pipe1
+        close(pipe2[0]); // Close read end of pipe2
+
+        int num;
+        while (read(pipe1[0], &num, sizeof(num)) > 0) {
+            num *= 2; // Process the number (double it)
+            write(pipe2[1], &num, sizeof(num)); // Send to process
+        }
+        close(pipe1[0]); // Close read end of pipe1
+        close(pipe2[1]); // Close write end of pipe2
+        exit(EXIT_SUCCESS);
+    }
+
+    // Parent process
+    close(pipe1[0]); // Close read end of pipe1
+    close(pipe1[1]); // Close write end of pipe1
+    close(pipe2[1]); // Close write end of pipe2
+
+    int processed_num;
+    // Read processed numbers from pipe2
+    while (read(pipe2[0], &processed_num, sizeof(processed_num)) > 0) {
+        printf("Processed number: %d\n", processed_num); // Print the processed number
+    }
+    close(pipe2[0]); // Close read end of pipe2
+
+    // Wait for children to finish
+    wait(NULL);
+    wait(NULL);
+
+    return 0;
+}
+
