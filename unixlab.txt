@@ -1,136 +1,73 @@
-ls command 
-#include <stdio.h>
-#include <stdlib.h>
-#include <dirent.h>  // For opendir(), readdir(), closedir()
-#include <errno.h>   // For errno, perror()
+ls command
 
-int main(int argc, char *argv[]) {
-    DIR *dir;                     // Pointer to the directory
-    struct dirent *entry;          // Struct to hold directory entry
-    char *directory;
-
-    // If no directory is provided, use the current directory
-    if (argc == 1) {
-        directory = ".";
-    } else if (argc == 2) {
-        directory = argv[1];       // Use the directory provided as an argument
-    } else {
-        fprintf(stderr, "Usage: %s [directory]\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
-
-    // Open the directory
-    dir = opendir(directory);
-    if (dir == NULL) {
-        perror("Error opening directory");
-        exit(EXIT_FAILURE);
-    }
-
-    // Read and print entries from the directory
-    while ((entry = readdir(dir)) != NULL) {
-        printf("%s\n", entry->d_name);  // Print the name of the entry
-    }
-
-    // Close the directory
-    closedir(dir);
-
-    return 0;
+#include<stdio.h>
+#include<stdlib.h>
+#include<dirent.h>
+struct dirent *dptr;
+int main(int argc, char *argv[])
+{
+char buff[100];
+DIR *dirp;
+printf("\n\n ENTER DIRECTORY NAME");
+scanf("%s", buff);
+if((dirp=opendir(buff))==NULL)
+{
+printf("The given directory does not exist");
+exit(1);
+}
+while(dptr=readdir(dirp))
+{
+printf("%s\n",dptr->d_name);
+}
+closedir(dirp);
 }
 
-//gcc -o my_ls my_ls.c - compile
-//./my_ls -run
-
-
-cat command 
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>    // For open()
-#include <unistd.h>   // For read(), write(), close()
-
-#define BUFFER_SIZE 1024
-
-void display_file_content(const char *filename) {
-    int fd;                     // File descriptor
-    char buffer[BUFFER_SIZE];    // Buffer to hold file content
-    ssize_t bytes_read;          // Number of bytes read
-
-    // 1. Open the file for reading (O_RDONLY)
-    fd = open(filename, O_RDONLY);
-    if (fd < 0) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-
-    // 2. Read from the file and write to standard output (STDOUT_FILENO)
-    while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0) {
-        // Write the content to standard output
-        if (write(STDOUT_FILENO, buffer, bytes_read) != bytes_read) {
-            perror("Error writing to stdout");
-            close(fd);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    // If read returns -1, there was an error
-    if (bytes_read < 0) {
-        perror("Error reading file");
-        close(fd);
-        exit(EXIT_FAILURE);
-    }
-
-    // 3. Close the file descriptor
-    close(fd);
+Cp command
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<stdio.h>
+#include<fcntl.h>
+#include<unistd.h>
+int main( int argc,char *argv[] )
+{
+int i,fd1,fd2;
+char *file1,*file2,buf[2];
+file1=argv[1];
+file2=argv[2];
+printf("file1=%s file2=%s",file1,file2);
+fd1=open(file1,O_RDONLY,0777);
+fd2=creat(file2,0777);
+while(i=read(fd1,buf,1)>0)
+write(fd2,buf,1);
+remove(file1);
+close(fd1);
+close(fd2);
 }
 
-int main(int argc, char *argv[]) {
-    // Check if the correct number of arguments is provided
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
-
-    // Call the function to display the file's content
-    display_file_content(argv[1]);
-
-    return 0;
+cat command
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<stdio.h>
+#include<fcntl.h>
+#include<unistd.h>
+int main( int argc,char *argv[3] )
+{
+int fd,i;
+char buf[2];
+fd=open(argv[1],O_RDONLY,0777);
+if(fd==-argc)
+{
+printf("file open error");
 }
-
-
-cp command 
-#include <stdio.h>
-#include <stdlib.h>
-
-int main(int argc, char *argv[]) {
-    // Ensure two arguments are provided: source file and destination file
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <sourcefile> <destinationfile>\n", argv[0]);
-        exit(1);
-    }
-
-    // Open the source file for reading
-    FILE *source_file = fopen(argv[1], "r");
-    if (source_file == NULL) {
-        perror("Error opening source file");
-        exit(1);
-    }
-
-    // Open the destination file for writing (create it if it doesn't exist)
-    FILE *destination_file = fopen(argv[2], "w");
-    if (destination_file == NULL) {
-        perror("Error opening destination file");
-        fclose(source_file);  // Close the source file before exiting
-        exit(1);
-    }
-
-    // Copy the contents from source file to destination file
-    char ch;
-    while ((ch = fgetc(source_file)) != EOF) {
-        fputc(ch, destination_file);  // Write each character to the destination file
-    }
-
-    // Close both files
-    fclose(source_file);
-    fclose(destination_file);
+else
+{
+while((i=read(fd,buf,1))>0)
+{
+printf("%c",buf[0]);
+}
+close(fd);
+}
+}
 
 Case 1: Two Pipes with Three Processes
 Example Code
